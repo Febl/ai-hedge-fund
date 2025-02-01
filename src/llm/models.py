@@ -1,4 +1,5 @@
 import os
+from langchain_anthropic import ChatAnthropic
 from langchain_groq import ChatGroq
 from langchain_openai import ChatOpenAI
 from enum import Enum
@@ -10,6 +11,7 @@ class ModelProvider(str, Enum):
     """Enum for supported LLM providers"""
     OPENAI = "OpenAI"
     GROQ = "Groq"
+    ANTHROPIC = "Anthropic"
 
 
 class LLMModel(BaseModel):
@@ -54,6 +56,21 @@ AVAILABLE_MODELS = [
         model_name="llama-3.3-70b-versatile",
         provider=ModelProvider.GROQ
     ),
+    LLMModel(
+        display_name="claude-3.5-sonnet [anthropic]",
+        model_name="claude-3-5-sonnet-latest",
+        provider=ModelProvider.ANTHROPIC
+    ),
+    LLMModel(
+        display_name="claude-3.5-haiku [anthropic]",
+        model_name="claude-3-5-haiku-latest",
+        provider=ModelProvider.ANTHROPIC
+    ),
+    LLMModel(
+        display_name="claude-3-opus [anthropic]",
+        model_name="claude-3-opus-latest",
+        provider=ModelProvider.ANTHROPIC
+    ),
 ]
 
 # Create LLM_ORDER in the format expected by the UI
@@ -69,7 +86,7 @@ def get_model(model_name: str, model_provider: ModelProvider) -> ChatOpenAI | Ch
         if not api_key:
             # Print error to console
             print(f"API Key Error: Please make sure GROQ_API_KEY is set in your .env file.")
-            return None
+            raise ValueError("Groq API key not found.  Please make sure GROQ_API_KEY is set in your .env file.")
         return ChatGroq(model=model_name, api_key=api_key)
     elif model_provider == ModelProvider.OPENAI:
         # Get and validate API key
@@ -77,7 +94,11 @@ def get_model(model_name: str, model_provider: ModelProvider) -> ChatOpenAI | Ch
         if not api_key:
             # Print error to console
             print(f"API Key Error: Please make sure OPENAI_API_KEY is set in your .env file.")
-            return None
+            raise ValueError("OpenAI API key not found.  Please make sure OPENAI_API_KEY is set in your .env file.")
         return ChatOpenAI(model=model_name, api_key=api_key)
-
-
+    elif model_provider == ModelProvider.ANTHROPIC:
+        api_key = os.getenv("ANTHROPIC_API_KEY")
+        if not api_key:
+            print(f"API Key Error: Please make sure ANTHROPIC_API_KEY is set in your .env file.")
+            raise ValueError("Anthropic API key not found.  Please make sure ANTHROPIC_API_KEY is set in your .env file.")
+        return ChatAnthropic(model=model_name, api_key=api_key)
